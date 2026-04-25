@@ -12,7 +12,6 @@
         --text: #e7ecff;
         --muted: #9fb0e3;
         --accent: #6ea8fe;
-        --accent-2: #66ffd6;
         --danger: #ff7a90;
         --ok: #8dffb0;
         --border: rgba(255, 255, 255, 0.14);
@@ -35,8 +34,8 @@
       }
 
       .container {
-        width: min(1080px, 92%);
-        margin: 40px auto;
+        width: min(560px, 92%);
+        margin: 60px auto;
       }
 
       h1 {
@@ -50,17 +49,11 @@
         color: var(--muted);
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 18px;
-      }
-
       .card {
         background: linear-gradient(180deg, var(--card), var(--card-2));
         border: 1px solid var(--border);
         border-radius: 20px;
-        padding: 20px;
+        padding: 24px;
         box-shadow: var(--shadow);
       }
 
@@ -87,39 +80,14 @@
         background: rgba(255, 255, 255, 0.03);
         color: var(--text);
         border-radius: 12px;
-        padding: 12px 14px;
+        padding: 16px 18px;
+        font-size: 16px;
         outline: none;
         transition: border-color 120ms ease;
       }
 
       input[type="text"]:focus {
         border-color: var(--accent);
-      }
-
-      .dropzone {
-        border: 2px dashed var(--border);
-        border-radius: 14px;
-        padding: 20px;
-        min-height: 150px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        color: var(--muted);
-        background: rgba(255, 255, 255, 0.02);
-        transition: border-color 120ms ease, background 120ms ease;
-        cursor: pointer;
-      }
-
-      .dropzone.dragover {
-        border-color: var(--accent-2);
-        background: rgba(102, 255, 214, 0.08);
-      }
-
-      .file-name {
-        margin-top: 8px;
-        color: #d5fff4;
-        font-size: 14px;
       }
 
       .actions {
@@ -165,52 +133,24 @@
   <body>
     <main class="container">
       <h1>Generator CID Microsoft</h1>
-      <p class="subtitle">
-        Obține CID-ul fie din IID text, fie prin upload imagine.
-      </p>
+      <p class="subtitle">Introdu IID-ul pentru a genera CID-ul de activare.</p>
 
-      <section class="grid">
-        <article class="card">
-          <h2>Din IID text</h2>
-          <p>Introdu IID-ul și apasă butonul pentru generare CID.</p>
-          <label for="iid-input" class="label">IID</label>
-          <input id="iid-input" type="text" placeholder="Ex: 123456-123456-..." />
-          <div class="actions">
-            <button id="iid-button">Generează CID din IID</button>
-          </div>
-          <div id="iid-result" class="result">Rezultatul va apărea aici.</div>
-        </article>
-
-        <article class="card">
-          <h2>Din imagine</h2>
-          <p>Trage imaginea în zonă sau dă click pentru selectare.</p>
-          <input id="image-input" type="file" accept="image/*" hidden />
-          <div id="dropzone" class="dropzone">
-            Trage &amp; drop imagine aici
-            <br />
-            sau click pentru a alege un fișier
-          </div>
-          <div id="file-name" class="file-name"></div>
-          <div class="actions">
-            <button id="image-button">Generează CID din imagine</button>
-          </div>
-          <div id="image-result" class="result">Rezultatul va apărea aici.</div>
-        </article>
-      </section>
+      <div class="card">
+        <h2>Din IID text</h2>
+        <p>Introdu IID-ul și apasă butonul pentru generare CID.</p>
+        <label for="iid-input" class="label">IID</label>
+        <input id="iid-input" type="text" placeholder="Ex: 123456-123456-..." />
+        <div class="actions">
+          <button id="iid-button">Generează CID</button>
+        </div>
+        <div id="iid-result" class="result">Rezultatul va apărea aici.</div>
+      </div>
     </main>
 
     <script>
       const iidInput = document.getElementById("iid-input");
       const iidButton = document.getElementById("iid-button");
       const iidResult = document.getElementById("iid-result");
-
-      const dropzone = document.getElementById("dropzone");
-      const imageInput = document.getElementById("image-input");
-      const imageButton = document.getElementById("image-button");
-      const imageResult = document.getElementById("image-result");
-      const fileName = document.getElementById("file-name");
-
-      let selectedFile = null;
 
       function setResult(el, text, type) {
         el.textContent = text;
@@ -231,11 +171,7 @@
         }
 
         if (!isIidFormatValid(iid)) {
-          setResult(
-            iidResult,
-            "IID invalid. Folosește doar cifre (și opțional cratime/spații), apoi încearcă din nou.",
-            "error"
-          );
+          setResult(iidResult, "IID invalid, verifică din nou codul introdus.", "error");
           return;
         }
 
@@ -248,13 +184,16 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ iid }),
           });
-          const data = await response.json();
+          const text = await response.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            throw new Error("Serverul nu a răspuns corect. Asigură-te că rulezi prin `netlify dev`.");
+          }
 
           if (!response.ok) {
-            throw new Error(
-              data.error ||
-                "API PIDKey a returnat o eroare. Verifică IID-ul și încearcă din nou."
-            );
+            throw new Error(data.error || "API PIDKey a returnat o eroare. Verifică IID-ul și încearcă din nou.");
           }
 
           if (!data.cid || typeof data.cid !== "string") {
@@ -263,88 +202,16 @@
 
           setResult(iidResult, `CID: ${data.cid}`, "ok");
         } catch (error) {
-          setResult(
-            iidResult,
-            error.message || "A apărut o eroare la generarea CID-ului.",
-            "error"
-          );
+          setResult(iidResult, error.message || "A apărut o eroare la generarea CID-ului.", "error");
         } finally {
           iidButton.disabled = false;
         }
       }
 
-      function readFileAsDataURL(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      }
-
-      async function handleImage() {
-        if (!selectedFile) {
-          setResult(imageResult, "Selectează mai întâi o imagine.", "error");
-          return;
-        }
-
-        imageButton.disabled = true;
-        setResult(imageResult, "Se procesează imaginea...");
-
-        try {
-          const dataUrl = await readFileAsDataURL(selectedFile);
-          const base64 = String(dataUrl).split(",")[1];
-
-          const response = await fetch("/.netlify/functions/get-cid-image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageBase64: base64 }),
-          });
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "Nu s-a putut genera CID din imagine.");
-          }
-
-          setResult(imageResult, `CID: ${data.cid}`, "ok");
-        } catch (error) {
-          setResult(imageResult, error.message, "error");
-        } finally {
-          imageButton.disabled = false;
-        }
-      }
-
-      function setSelectedFile(file) {
-        selectedFile = file;
-        fileName.textContent = file ? `Fișier selectat: ${file.name}` : "";
-      }
-
-      dropzone.addEventListener("click", () => imageInput.click());
-      imageInput.addEventListener("change", () => {
-        setSelectedFile(imageInput.files[0] || null);
-      });
-
-      ["dragenter", "dragover"].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.add("dragover");
-        });
-      });
-
-      ["dragleave", "drop"].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.remove("dragover");
-        });
-      });
-
-      dropzone.addEventListener("drop", (event) => {
-        const file = event.dataTransfer.files && event.dataTransfer.files[0];
-        if (file) setSelectedFile(file);
-      });
-
       iidButton.addEventListener("click", handleIid);
-      imageButton.addEventListener("click", handleImage);
+      iidInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") handleIid();
+      });
     </script>
   </body>
 </html>

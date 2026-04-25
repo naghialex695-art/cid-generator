@@ -33,7 +33,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: "IID invalid. Verifică formatul și încearcă din nou.",
+          error: "IID invalid, verifică din nou codul introdus.",
         }),
       };
     }
@@ -69,6 +69,15 @@ exports.handler = async (event) => {
       };
     }
 
+    if (!raw || !raw.trim()) {
+      return {
+        statusCode: 502,
+        body: JSON.stringify({
+          error: "Contactează echipa de suport.",
+        }),
+      };
+    }
+
     let parsed;
     try {
       parsed = JSON.parse(raw);
@@ -76,7 +85,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 502,
         body: JSON.stringify({
-          error: "API PIDKey a returnat un răspuns invalid (nu este JSON).",
+          error: `API PIDKey a returnat un răspuns invalid (HTTP ${pidkeyResponse.status}). Răspuns brut: ${raw.slice(0, 300)}`,
         }),
       };
     }
@@ -87,8 +96,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 502,
         body: JSON.stringify({
-          error:
-            "Nu există CID în răspunsul API (câmpul confirmation_id_with_dash lipsește).",
+          error: "Contactează echipa de suport.",
         }),
       };
     }
