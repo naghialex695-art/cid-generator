@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generator CID Microsoft</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #121a33;
+        --card-2: #1a2548;
+        --text: #e7ecff;
+        --muted: #9fb0e3;
+        --accent: #6ea8fe;
+        --accent-2: #66ffd6;
+        --danger: #ff7a90;
+        --ok: #8dffb0;
+        --border: rgba(255, 255, 255, 0.14);
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(1000px 600px at -10% -20%, #213370 0%, transparent 55%),
+          radial-gradient(900px 550px at 110% 120%, #245b66 0%, transparent 55%),
+          var(--bg);
+      }
+
+      .container {
+        width: min(1080px, 92%);
+        margin: 40px auto;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(28px, 4vw, 42px);
+        font-weight: 700;
+      }
+
+      .subtitle {
+        margin: 0 0 32px;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        background: linear-gradient(180deg, var(--card), var(--card-2));
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .card h2 {
+        margin: 0 0 6px;
+        font-size: 22px;
+      }
+
+      .card p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
+      .label {
+        display: block;
+        margin: 10px 0 6px;
+        font-size: 14px;
+        color: #cad7ff;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 12px 14px;
+        outline: none;
+        transition: border-color 120ms ease;
+      }
+
+      input[type="text"]:focus {
+        border-color: var(--accent);
+      }
+
+      .dropzone {
+        border: 2px dashed var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.02);
+        transition: border-color 120ms ease, background 120ms ease;
+        cursor: pointer;
+      }
+
+      .dropzone.dragover {
+        border-color: var(--accent-2);
+        background: rgba(102, 255, 214, 0.08);
+      }
+
+      .file-name {
+        margin-top: 8px;
+        color: #d5fff4;
+        font-size: 14px;
+      }
+
+      .actions {
+        margin-top: 14px;
+      }
+
+      button {
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        background: linear-gradient(90deg, var(--accent), #7f8dff);
+        color: #061431;
+        font-weight: 700;
+        padding: 12px 16px;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
+
+      .result {
+        margin-top: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.18);
+        padding: 12px;
+        min-height: 72px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .ok {
+        color: var(--ok);
+      }
+
+      .error {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Generator CID Microsoft</h1>
+      <p class="subtitle">
+        Obține CID-ul fie din IID text, fie prin upload imagine.
+      </p>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Din IID text</h2>
+          <p>Introdu IID-ul și apasă butonul pentru generare CID.</p>
+          <label for="iid-input" class="label">IID</label>
+          <input id="iid-input" type="text" placeholder="Ex: 123456-123456-..." />
+          <div class="actions">
+            <button id="iid-button">Generează CID din IID</button>
+          </div>
+          <div id="iid-result" class="result">Rezultatul va apărea aici.</div>
+        </article>
+
+        <article class="card">
+          <h2>Din imagine</h2>
+          <p>Trage imaginea în zonă sau dă click pentru selectare.</p>
+          <input id="image-input" type="file" accept="image/*" hidden />
+          <div id="dropzone" class="dropzone">
+            Trage &amp; drop imagine aici
+            <br />
+            sau click pentru a alege un fișier
+          </div>
+          <div id="file-name" class="file-name"></div>
+          <div class="actions">
+            <button id="image-button">Generează CID din imagine</button>
+          </div>
+          <div id="image-result" class="result">Rezultatul va apărea aici.</div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const iidInput = document.getElementById("iid-input");
+      const iidButton = document.getElementById("iid-button");
+      const iidResult = document.getElementById("iid-result");
+
+      const dropzone = document.getElementById("dropzone");
+      const imageInput = document.getElementById("image-input");
+      const imageButton = document.getElementById("image-button");
+      const imageResult = document.getElementById("image-result");
+      const fileName = document.getElementById("file-name");
+
+      let selectedFile = null;
+
+      function setResult(el, text, type) {
+        el.textContent = text;
+        el.classList.remove("ok", "error");
+        if (type) el.classList.add(type);
+      }
+
+      async function handleIid() {
+        const iid = iidInput.value.trim();
+        if (!iid) {
+          setResult(iidResult, "Te rog introdu un IID valid.", "error");
+          return;
+        }
+
+        iidButton.disabled = true;
+        setResult(iidResult, "Se generează CID...");
+
+        try {
+          const response = await fetch("/.netlify/functions/get-cid-iid", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ iid }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Nu s-a putut genera CID.");
+          }
+
+          setResult(iidResult, `CID: ${data.cid}`, "ok");
+        } catch (error) {
+          setResult(iidResult, error.message, "error");
+        } finally {
+          iidButton.disabled = false;
+        }
+      }
+
+      function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function handleImage() {
+        if (!selectedFile) {
+          setResult(imageResult, "Selectează mai întâi o imagine.", "error");
+          return;
+        }
+
+        imageButton.disabled = true;
+        setResult(imageResult, "Se procesează imaginea...");
+
+        try {
+          const dataUrl = await readFileAsDataURL(selectedFile);
+          const base64 = String(dataUrl).split(",")[1];
+
+          const response = await fetch("/.netlify/functions/get-cid-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageBase64: base64 }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Nu s-a putut genera CID din imagine.");
+          }
+
+          setResult(imageResult, `CID: ${data.cid}`, "ok");
+        } catch (error) {
+          setResult(imageResult, error.message, "error");
+        } finally {
+          imageButton.disabled = false;
+        }
+      }
+
+      function setSelectedFile(file) {
+        selectedFile = file;
+        fileName.textContent = file ? `Fișier selectat: ${file.name}` : "";
+      }
+
+      dropzone.addEventListener("click", () => imageInput.click());
+      imageInput.addEventListener("change", () => {
+        setSelectedFile(imageInput.files[0] || null);
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add("dragover");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove("dragover");
+        });
+      });
+
+      dropzone.addEventListener("drop", (event) => {
+        const file = event.dataTransfer.files && event.dataTransfer.files[0];
+        if (file) setSelectedFile(file);
+      });
+
+      iidButton.addEventListener("click", handleIid);
+      imageButton.addEventListener("click", handleImage);
+    </script>
+  </body>
+</html>
