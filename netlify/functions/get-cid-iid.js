@@ -73,7 +73,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 502,
         body: JSON.stringify({
-          error: "Contactează echipa de suport.",
+          error: "Nu s-a putut obține CID, verificați din nou IID-ul sau contactați echipa de suport.",
         }),
       };
     }
@@ -96,7 +96,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 502,
         body: JSON.stringify({
-          error: "Contactează echipa de suport.",
+          error: "Nu s-a putut obține CID, verificați din nou IID-ul sau contactați echipa de suport.",
         }),
       };
     }
