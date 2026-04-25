@@ -189,15 +189,15 @@
           try {
             data = JSON.parse(text);
           } catch {
-            throw new Error("Serverul nu a răspuns corect. Asigură-te că rulezi prin `netlify dev`.");
+            throw new Error("Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.");
           }
 
-          if (!response.ok) {
-            throw new Error(data.error || "API PIDKey a returnat o eroare. Verifică IID-ul și încearcă din nou.");
+          if (data.error) {
+            throw new Error(data.error);
           }
 
           if (!data.cid || typeof data.cid !== "string") {
-            throw new Error("Nu există CID în răspunsul serverului.");
+            throw new Error("Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.");
           }
 
           setResult(iidResult, `CID: ${data.cid}`, "ok");

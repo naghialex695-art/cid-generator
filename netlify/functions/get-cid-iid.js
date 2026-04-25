@@ -9,7 +9,7 @@ exports.handler = async (event) => {
   const apiKey = process.env.PIDKEY_API_KEY;
   if (!apiKey) {
     return {
-      statusCode: 500,
+      statusCode: 200,
       body: JSON.stringify({ error: "Lipsește variabila de mediu PIDKEY_API_KEY." }),
     };
   }
@@ -20,10 +20,8 @@ exports.handler = async (event) => {
 
     if (!iidText) {
       return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: "IID-ul este gol. Introdu un IID valid.",
-        }),
+        statusCode: 200,
+        body: JSON.stringify({ error: "IID-ul este gol. Introdu un IID valid." }),
       };
     }
 
@@ -31,10 +29,8 @@ exports.handler = async (event) => {
     const normalizedIid = iidText.replace(/[-\s]/g, "");
     if (!/^\d+$/.test(normalizedIid) || normalizedIid.length < 30) {
       return {
-        statusCode: 400,
-        body: JSON.stringify({
-          error: "IID invalid, verifică din nou codul introdus.",
-        }),
+        statusCode: 200,
+        body: JSON.stringify({ error: "IID invalid, verifică din nou codul introdus." }),
       };
     }
 
@@ -45,35 +41,11 @@ exports.handler = async (event) => {
     const pidkeyResponse = await fetch(endpoint);
     const raw = await pidkeyResponse.text();
 
-    if (!pidkeyResponse.ok) {
-      let detailsMessage = "";
-      try {
-        const detailsJson = JSON.parse(raw);
-        detailsMessage =
-          detailsJson?.error ||
-          detailsJson?.message ||
-          detailsJson?.result ||
-          detailsJson?.status ||
-          "";
-      } catch {
-        detailsMessage = raw;
-      }
-
-      return {
-        statusCode: 502,
-        body: JSON.stringify({
-          error: `API PIDKey a returnat o eroare.${
-            detailsMessage ? ` Detalii: ${String(detailsMessage).trim()}` : ""
-          }`,
-        }),
-      };
-    }
-
     if (!raw || !raw.trim()) {
       return {
-        statusCode: 502,
+        statusCode: 200,
         body: JSON.stringify({
-          error: "Nu s-a putut obține CID, verificați din nou IID-ul sau contactați echipa de suport.",
+          error: "Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.",
         }),
       };
     }
@@ -83,9 +55,9 @@ exports.handler = async (event) => {
       parsed = JSON.parse(raw);
     } catch {
       return {
-        statusCode: 502,
+        statusCode: 200,
         body: JSON.stringify({
-          error: `API PIDKey a returnat un răspuns invalid (HTTP ${pidkeyResponse.status}). Răspuns brut: ${raw.slice(0, 300)}`,
+          error: "Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.",
         }),
       };
     }
@@ -94,9 +66,9 @@ exports.handler = async (event) => {
 
     if (!cid || typeof cid !== "string") {
       return {
-        statusCode: 502,
+        statusCode: 200,
         body: JSON.stringify({
-          error: "Nu s-a putut obține CID, verificați din nou IID-ul sau contactați echipa de suport.",
+          error: "Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.",
         }),
       };
     }
@@ -107,9 +79,9 @@ exports.handler = async (event) => {
     };
   } catch (error) {
     return {
-      statusCode: 500,
+      statusCode: 200,
       body: JSON.stringify({
-        error: error.message || "A apărut o eroare internă neașteptată pe server.",
+        error: "Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.",
       }),
     };
   }
