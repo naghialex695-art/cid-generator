@@ -2,7 +2,7 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
-      body: JSON.stringify({ error: "Method Not Allowed" }),
+      body: JSON.stringify({ error: "Metodă HTTP nepermisă." }),
     };
   }
 
@@ -10,31 +10,62 @@ exports.handler = async (event) => {
   if (!apiKey) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Missing PIDKEY_API_KEY environment variable." }),
+      body: JSON.stringify({ error: "Lipsește variabila de mediu PIDKEY_API_KEY." }),
     };
   }
 
   try {
     const { iid } = JSON.parse(event.body || "{}");
+    const iidText = typeof iid === "string" ? iid.trim() : "";
 
-    if (!iid || typeof iid !== "string") {
+    if (!iidText) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "IID is required." }),
+        body: JSON.stringify({
+          error: "IID-ul este gol. Introdu un IID valid.",
+        }),
+      };
+    }
+
+    // IID trebuie sa contina doar cifre, cratime sau spatii si sa aiba minim 30 cifre.
+    const normalizedIid = iidText.replace(/[-\s]/g, "");
+    if (!/^\d+$/.test(normalizedIid) || normalizedIid.length < 30) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          error: "IID invalid. Verifică formatul și încearcă din nou.",
+        }),
       };
     }
 
     const endpoint = `https://pidkey.com/ajax/cidms_api?iids=${encodeURIComponent(
-      iid.trim()
+      iidText
     )}&justforcheck=0&apikey=${encodeURIComponent(apiKey)}`;
 
     const pidkeyResponse = await fetch(endpoint);
     const raw = await pidkeyResponse.text();
 
     if (!pidkeyResponse.ok) {
+      let detailsMessage = "";
+      try {
+        const detailsJson = JSON.parse(raw);
+        detailsMessage =
+          detailsJson?.error ||
+          detailsJson?.message ||
+          detailsJson?.result ||
+          detailsJson?.status ||
+          "";
+      } catch {
+        detailsMessage = raw;
+      }
+
       return {
-        statusCode: pidkeyResponse.status,
-        body: JSON.stringify({ error: "PIDKey request failed.", details: raw }),
+        statusCode: 502,
+        body: JSON.stringify({
+          error: `API PIDKey a returnat o eroare.${
+            detailsMessage ? ` Detalii: ${String(detailsMessage).trim()}` : ""
+          }`,
+        }),
       };
     }
 
@@ -42,22 +73,36 @@ exports.handler = async (event) => {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      parsed = null;
+      return {
+        statusCode: 502,
+        body: JSON.stringify({
+          error: "API PIDKey a returnat un răspuns invalid (nu este JSON).",
+        }),
+      };
     }
 
-    const cid = parsed?.cid || parsed?.CID || parsed?.data?.cid || parsed?.data?.CID;
+    const cid = parsed?.confirmation_id_with_dash;
+
+    if (!cid || typeof cid !== "string") {
+      return {
+        statusCode: 502,
+        body: JSON.stringify({
+          error:
+            "Nu există CID în răspunsul API (câmpul confirmation_id_with_dash lipsește).",
+        }),
+      };
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        cid: cid || raw,
-        source: parsed ? "json" : "text",
-      }),
+      body: JSON.stringify({ cid: cid.trim() }),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message || "Unexpected server error." }),
+      body: JSON.stringify({
+        error: error.message || "A apărut o eroare internă neașteptată pe server.",
+      }),
     };
   }
 };

@@ -218,10 +218,24 @@
         if (type) el.classList.add(type);
       }
 
+      function isIidFormatValid(iid) {
+        const normalized = iid.replace(/[-\s]/g, "");
+        return /^\d+$/.test(normalized) && normalized.length >= 30;
+      }
+
       async function handleIid() {
         const iid = iidInput.value.trim();
         if (!iid) {
-          setResult(iidResult, "Te rog introdu un IID valid.", "error");
+          setResult(iidResult, "IID-ul este gol. Introdu un IID valid.", "error");
+          return;
+        }
+
+        if (!isIidFormatValid(iid)) {
+          setResult(
+            iidResult,
+            "IID invalid. Folosește doar cifre (și opțional cratime/spații), apoi încearcă din nou.",
+            "error"
+          );
           return;
         }
 
@@ -237,12 +251,23 @@
           const data = await response.json();
 
           if (!response.ok) {
-            throw new Error(data.error || "Nu s-a putut genera CID.");
+            throw new Error(
+              data.error ||
+                "API PIDKey a returnat o eroare. Verifică IID-ul și încearcă din nou."
+            );
+          }
+
+          if (!data.cid || typeof data.cid !== "string") {
+            throw new Error("Nu există CID în răspunsul serverului.");
           }
 
           setResult(iidResult, `CID: ${data.cid}`, "ok");
         } catch (error) {
-          setResult(iidResult, error.message, "error");
+          setResult(
+            iidResult,
+            error.message || "A apărut o eroare la generarea CID-ului.",
+            "error"
+          );
         } finally {
           iidButton.disabled = false;
         }
