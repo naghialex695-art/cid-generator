@@ -38,33 +38,39 @@ exports.handler = async (event) => {
       iidText
     )}&justforcheck=0&apikey=${encodeURIComponent(apiKey)}`;
 
-    const pidkeyResponse = await fetch(endpoint);
-    const raw = await pidkeyResponse.text();
+    const MAX_ATTEMPTS = 4;
+    const RETRY_DELAY_MS = 3000;
 
-    if (!raw || !raw.trim()) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          error: "Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.",
-        }),
-      };
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    let cid = null;
+    let lastRaw = null;
+    let lastParsed = null;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const pidkeyResponse = await fetch(endpoint);
+      lastRaw = await pidkeyResponse.text();
+
+      if (lastRaw && lastRaw.trim()) {
+        try {
+          lastParsed = JSON.parse(lastRaw);
+        } catch {
+          lastParsed = null;
+        }
+
+        const candidate = lastParsed?.confirmation_id_with_dash;
+        if (candidate && typeof candidate === "string") {
+          cid = candidate.trim();
+          break;
+        }
+      }
+
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(RETRY_DELAY_MS);
+      }
     }
 
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          error: "Verifică corectitudinea IID, dacă acesta este corect atunci contactează echipa de suport.",
-        }),
-      };
-    }
-
-    const cid = parsed?.confirmation_id_with_dash;
-
-    if (!cid || typeof cid !== "string") {
+    if (!cid) {
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -75,7 +81,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ cid: cid.trim() }),
+      body: JSON.stringify({ cid }),
     };
   } catch (error) {
     return {
